@@ -109,6 +109,7 @@ class LoopixClient(DatagramProtocol):
     def send(self, packet):
         encoded_packet = petlib.pack.encode(packet)
         if abstract.isIPAddress(self.provider.host):
+            log.msg("[%s] > Sending packet to %s:%s" % (self.name, self.provider.host, self.provider.port))
             self.transport.write(encoded_packet, (self.provider.host, self.provider.port))
 
     def schedule_next_call(self, param, method):

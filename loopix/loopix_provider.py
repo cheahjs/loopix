@@ -32,6 +32,7 @@ class LoopixProvider(LoopixMixNode):
             if decoded_packet[0] == 'SUBSCRIBE':
                 self.subscribe_client(decoded_packet[1:])
             elif decoded_packet[0] == 'PULL':
+                print "[%s] > Got PULL for %s" % (self.name, decoded_packet[1])
                 pulled_messages = self.pull_messages(client_id=decoded_packet[1])
                 map(lambda (packet, addr): self.send(packet, addr),
                     zip(pulled_messages, itertools.repeat(self.clients[decoded_packet[1]])))
@@ -39,6 +40,7 @@ class LoopixProvider(LoopixMixNode):
                 flag, decrypted_packet = self.crypto_node.process_packet(decoded_packet)
                 if flag == "ROUT":
                     delay, new_header, new_body, next_addr, next_name = decrypted_packet
+                    print "[%s] > Received routing message: %s (%s) (delay: %f)" % (self.name, next_addr, next_name, delay)
                     if self.is_assigned_client(next_name):
                         self.put_into_storage(next_name, (new_header, new_body))
                     else:
@@ -50,6 +52,8 @@ class LoopixProvider(LoopixMixNode):
                     print "[%s] > Received loop message" % self.name
                 elif flag == "DROP":
                     print "[%s] > Received drop message" % self.name
+                else:
+                    print "[%s] > Received unknown message" % self.name
         except Exception, exp:
             print "ERROR: ", str(exp)
 
