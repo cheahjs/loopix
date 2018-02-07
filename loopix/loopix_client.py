@@ -61,7 +61,7 @@ class LoopixClient(DatagramProtocol):
         self.provider = self.provider._replace(host = result)
 
     def subscribe_to_provider(self):
-        lc = task.LoopingCall(self.send, ['SUBSCRIBE', self.name, self.host, self.port])
+        lc = task.LoopingCall(self.send, ['SUBSCRIBE', self.name, self.host, self.port, self.pubk])
         lc.start(self.config_params.TIME_PULL, now=True)
 
     def register_mixes(self, mixes):
@@ -97,9 +97,8 @@ class LoopixClient(DatagramProtocol):
 
     def read_packet(self, packet):
         decoded_packet = petlib.pack.decode(packet)
-        if not decoded_packet[0] == 'DUMMY':
-            flag, decrypted_packet = self.crypto_client.process_packet(decoded_packet)
-            return (flag, decrypted_packet)
+        flag, decrypted_packet = self.crypto_client.process_packet(decoded_packet)
+        return (flag, decrypted_packet)
 
     def send_message(self, message, receiver):
         path = self.construct_full_path(receiver)
