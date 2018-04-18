@@ -33,6 +33,8 @@ class LoopixProvider(LoopixMixNode):
         try:
             decoded_packet = petlib.pack.decode(packet)
             if decoded_packet[0] == 'SUBSCRIBE':
+                print "[%s] > Got SUBSCRIBE" % (self.name)
+                print decoded_packet
                 self.subscribe_client(decoded_packet[1:])
             elif decoded_packet[0] == 'PULL':
                 print "[%s] > Got PULL for %s" % (self.name, decoded_packet[1])
@@ -45,7 +47,10 @@ class LoopixProvider(LoopixMixNode):
                     delay, new_header, new_body, next_addr, next_name = decrypted_packet
                     print "[%s] > Received routing message: %s (%s) (delay: %f)" % (self.name, next_addr, next_name, delay)
                     if self.is_assigned_client(next_name):
-                        self.put_into_storage(next_name, (new_header, new_body))
+                        if self.config_params.PUSH_MESSAGES:
+                            self.send((new_header, new_body), next_addr)
+                        else:
+                            self.put_into_storage(next_name, (new_header, new_body))
                     else:
                         self.reactor.callFromThread(self.send_or_delay,
                                                     delay,

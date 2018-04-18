@@ -11,6 +11,7 @@ from json_reader import JSONReader
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor, task, abstract
 from twisted.python import log
+from binascii import hexlify
 
 import twisted.names.client
 
@@ -98,6 +99,7 @@ class LoopixClient(DatagramProtocol):
     def read_packet(self, packet):
         decoded_packet = petlib.pack.decode(packet)
         flag, decrypted_packet = self.crypto_client.process_packet(decoded_packet)
+        log.msg("[%s] > Received %s:%s" % (self.name, flag, hexlify(decrypted_packet)))
         return (flag, decrypted_packet)
 
     def send_message(self, message, receiver):
@@ -137,13 +139,15 @@ class LoopixClient(DatagramProtocol):
         self.send((header, body))
 
     def make_real_stream(self):
-        if not self.output_buffer.empty():
-            log.msg("[%s] > Sending message from buffer." % self.name)
-            packet = self.output_buffer.get()
-            self.send(packet)
-        else:
-            log.msg("[%s] > Sending substituting drop message." % self.name)
-            self.send_drop_message()
+        # if not self.output_buffer.empty():
+        #     log.msg("[%s] > Sending message from buffer." % self.name)
+        #     packet = self.output_buffer.get()
+        #     self.send(packet)
+        # else:
+        #     log.msg("[%s] > Sending substituting drop message." % self.name)
+        #     self.send_drop_message()
+        log.msg("[%s] > Sending message for debug." % self.name)
+        self.send_message('Hi from %s' % self.name, self)
         self.schedule_next_call(self.config_params.EXP_PARAMS_PAYLOAD, self.make_real_stream)
 
     def construct_full_path(self, receiver):
