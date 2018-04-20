@@ -2,6 +2,7 @@ from Queue import Queue
 import random
 import os
 import petlib.pack
+import socket
 from processQueue import ProcessQueue
 from client_core import ClientCore
 from core import sample_from_exponential, group_layered_topology
@@ -55,8 +56,11 @@ class LoopixClient(DatagramProtocol):
 
     def get_provider_data(self):
         self.provider = self.dbManager.select_provider_by_name(self.provider.name)
-        d = twisted.names.client.getHostByName(self.provider.host)
-        d.addCallback(self.resolve_provider_address)
+        try:
+            result = socket.gethostbyname(self.provider.host)
+            self.provider = self.provider._replace(host=result)
+        except socket.gaierror, err:
+            print(err)
 
     def resolve_provider_address(self, result):
         self.provider = self.provider._replace(host = result)
