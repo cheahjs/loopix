@@ -3,6 +3,7 @@ import random
 import os
 import petlib.pack
 import socket
+import time
 from processQueue import ProcessQueue
 from client_core import ClientCore
 from core import sample_from_exponential, group_layered_topology
@@ -34,6 +35,7 @@ class LoopixClient(DatagramProtocol):
         self.crypto_client = ClientCore((sec_params, self.config_params), self.name,
                                         self.port, self.host, self.privk, self.pubk)
         self.provider = Provider(name=provider_id)
+        self.latency_file = open('latency.csv', 'a')
 
 
     def startProtocol(self):
@@ -103,6 +105,15 @@ class LoopixClient(DatagramProtocol):
     def read_packet(self, packet):
         decoded_packet = petlib.pack.decode(packet)
         flag, decrypted_packet = self.crypto_client.process_packet(decoded_packet)
+        recv_time = time.time()
+        try:
+            plain = decrypted_packet.decode("utf-8")
+            sent_time = float(plain)
+            time_taken = recv_time - sent_time
+            self.latency_file.write('%f,%f,%f\n' % (recv_time, sent_time, time_taken))
+            self.latency_file.flush()
+        except:
+            pass
         log.msg("[%s] > Received %s:%s" % (self.name, flag, hexlify(decrypted_packet)))
         return (flag, decrypted_packet)
 
@@ -150,8 +161,8 @@ class LoopixClient(DatagramProtocol):
         # else:
         #     log.msg("[%s] > Sending substituting drop message." % self.name)
         #     self.send_drop_message()
-        log.msg("[%s] > Sending message for debug." % self.name)
-        self.send_message('Hi from %s' % self.name, self)
+        log.msg("[%s] > Sending latency message." % self.name)
+        self.send_message('%f' % time.time(), self)
         self.schedule_next_call(self.config_params.EXP_PARAMS_PAYLOAD, self.make_real_stream)
 
     def construct_full_path(self, receiver):
